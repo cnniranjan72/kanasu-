@@ -1,61 +1,114 @@
-import React from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, BookOpen, User } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { LanguageToggle } from './LanguageToggle';
-import { cn } from '@/lib/utils';
+import React, { useState } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import {
+  Menu,
+  Home,
+  Landmark,
+  User,
+  Settings,
+  Compass,
+} from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageToggle } from "./LanguageToggle";
+import { cn } from "@/lib/utils";
 
 export const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
 
-  const tabs = [
-    { path: '/home', icon: Home, label: t('home') },
-    { path: '/scholarships', icon: BookOpen, label: t('scholarships') },
-    { path: '/profile', icon: User, label: t('profile') },
+  const [open, setOpen] = useState(false);
+
+  const menuItems = [
+    { path: "/home", label: t("home"), icon: Home },
+    { path: "/career-recommender", label: "Career Recommender", icon: Compass },
+    { path: "/scholarships", label: t("scholarships"), icon: Landmark },
+    { path: "/profile/user", label: "Profile", icon: User },
+    { path: "/profile/settings", label: "Settings", icon: Settings },
   ];
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
+
+      {/* HEADER */}
       <header className="sticky top-0 z-50 bg-card border-b shadow-sm">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-primary">KANASU</h1>
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between relative">
+
+          {/* Hamburger Menu */}
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger>
+              <Menu className="h-7 w-7 text-primary" />
+            </SheetTrigger>
+
+            <SheetContent side="left" className="w-64">
+              <SheetHeader>
+                <SheetTitle className="text-xl font-bold">KANASU</SheetTitle>
+              </SheetHeader>
+
+              <div className="mt-6 space-y-4">
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+
+                  return (
+                    <button
+                      key={item.path}
+                      onClick={() => {
+                        navigate(item.path);
+                        // ❌ removed setOpen(false)
+                      }}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg w-full text-left text-sm",
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-foreground hover:bg-accent"
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* CENTER TITLE */}
+          <h1
+  onClick={() => navigate("/home")}
+  className="
+    font-kannada
+    absolute left-1/2 -translate-x-1/2
+    cursor-pointer select-none
+    text-3xl font-extrabold
+    bg-gradient-to-r from-yellow-400 to-red-600
+    bg-clip-text text-transparent
+
+    transition-all duration-200
+    hover:scale-110 hover:opacity-90
+    active:scale-90
+  "
+>
+  ಕನಸು
+</h1>
+
+
+          {/* Language Toggle */}
           <LanguageToggle />
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto pb-20">
+      {/* MAIN CONTENT */}
+      <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
-
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-lg z-50">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-around h-20">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = location.pathname === tab.path;
-              
-              return (
-                <button
-                  key={tab.path}
-                  onClick={() => navigate(tab.path)}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-1 touch-target w-20 transition-colors",
-                    isActive ? "text-primary" : "text-muted-foreground"
-                  )}
-                >
-                  <Icon className={cn("h-6 w-6", isActive && "scale-110")} />
-                  <span className="text-xs font-medium">{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
     </div>
   );
 };

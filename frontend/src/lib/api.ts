@@ -56,7 +56,7 @@ export interface RoadmapResponse {
     colleges: string[];
   }>;
   nearby_institutions: Institution[];
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export const predictCareers = async (data: PredictRequest): Promise<PredictResponse> => {
