@@ -19,12 +19,19 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageToggle } from "./LanguageToggle";
 import { cn } from "@/lib/utils";
 
+// ⭐ NEW IMPORTS FOR CHATBOT
+import ChatbotWidget from "@/components/ChatbotWidget";
+import { useChatbot } from "@/hooks/useChatbot";
+
 export const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
 
   const [open, setOpen] = useState(false);
+
+  // ⭐ CHATBOT STATE
+  const { messages, setMessages } = useChatbot();
 
   const menuItems = [
     { path: "/home", label: t("home"), icon: Home },
@@ -62,7 +69,7 @@ export const MainLayout: React.FC = () => {
                       key={item.path}
                       onClick={() => {
                         navigate(item.path);
-                        // ❌ removed setOpen(false)
+                        // Do NOT close sidebar (as you requested)
                       }}
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-lg w-full text-left text-sm",
@@ -80,25 +87,23 @@ export const MainLayout: React.FC = () => {
             </SheetContent>
           </Sheet>
 
-          {/* CENTER TITLE */}
+          {/* CENTER TITLE — KANNADA TITLE */}
           <h1
-  onClick={() => navigate("/home")}
-  className="
-    font-kannada
-    absolute left-1/2 -translate-x-1/2
-    cursor-pointer select-none
-    text-3xl font-extrabold
-    bg-gradient-to-r from-yellow-400 to-red-600
-    bg-clip-text text-transparent
-
-    transition-all duration-200
-    hover:scale-110 hover:opacity-90
-    active:scale-90
-  "
->
-  ಕನಸು
-</h1>
-
+            onClick={() => navigate("/home")}
+            className="
+              font-kannada
+              absolute left-1/2 -translate-x-1/2
+              cursor-pointer select-none
+              text-3xl font-extrabold
+              bg-gradient-to-r from-yellow-400 to-red-600
+              bg-clip-text text-transparent
+              transition-all duration-200
+              hover:scale-110 hover:opacity-90
+              active:scale-90
+            "
+          >
+            ಕನಸು
+          </h1>
 
           {/* Language Toggle */}
           <LanguageToggle />
@@ -109,6 +114,12 @@ export const MainLayout: React.FC = () => {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
+
+      {/* ⭐ CHATBOT FLOATING WIDGET */}
+      <ChatbotWidget
+        initialMessages={messages}
+        onMessagesChange={setMessages}
+      />
     </div>
   );
 };
