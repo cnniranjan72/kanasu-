@@ -1,60 +1,79 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
-import json
-from pathlib import Path
+from typing import Optional, List
 
+from app.schemas import PredictInput
+from app.services.ml import ml_service
 from app.services.institution_service import search_institutes
-from app.config import settings
+from app.data.career_clusters import CAREER_CLUSTER_MAP
 
-router = APIRouter(prefix="/institutions", tags=["institutions"])
+router = APIRouter(prefix="/institutions", tags=["predict + institutions"])
 
-# load title->cluster map
-try:
-    DEFAULT_MAP_PATH = Path(settings.CLUSTER_MAP_PATH)
-    with open(DEFAULT_MAP_PATH, "r", encoding="utf-8") as f:
-        TITLE_CLUSTER_MAP = json.load(f)
-except:
-    TITLE_CLUSTER_MAP = {}
 
-class InstitutionSearchRequest(BaseModel):
+# helper: match title_label → cluster
+def get_cluster(title_label: str) -> Optional[str]:
+    for key, obj in CAREER_CLUSTER_MAP.items():
+        if obj["title_label"].lower() == title_label.lower():
+            return obj["cluster_label"]
+    return None
+
+
+class PredictInstitutionRequest(PredictInput):
     location: str
-    careers: List[str]
-    max_results_per_career: Optional[int] = None
 
-class InstituteOut(BaseModel):
-    name: Optional[str]
-    address: Optional[str]
-    distance_km: Optional[float]
-    maps_url: Optional[str]
-    courses: Optional[List[str]]
-    description: Optional[str]
 
-class InstitutionSearchResponse(BaseModel):
-    location_resolved: Optional[str]
-    institutes: List[InstituteOut]
-
-@router.post("/search", response_model=InstitutionSearchResponse)
-def institutions_search(req: InstitutionSearchRequest):
+@router.post("")
+def predict_and_institutions(req: PredictInstitutionRequest):
+    # --- validate location ---
     if not req.location:
         raise HTTPException(400, "location is required")
-    if not req.careers:
-        raise HTTPException(400, "careers is required")
 
+    # --- exact merge logic like notebook ---
+    parts = []
+    if req.text:
+        parts.append(req.text)
+    if req.interests:
+        parts.append(" ".join(req.interests))
+    if req.skills:
+        parts.append(" ".join(req.skills))
+
+    merged_text = " ".join(parts).strip()
+
+    # --- top 3 prediction ---
     try:
-        result = search_institutes(
+        top3 = ml_service.predict_top_k({"text": merged_text}, k=3)
+    except Exception as e:
+        raise HTTPException(500, f"ML model error: {e}")
+
+    if not top3:
+        raise HTTPException(500, "Model returned no predictions")
+
+    # careers list for institution search
+    career_titles = [p["label"] for p in top3]
+
+    # --- search institutions ---
+    try:
+        inst_results = search_institutes(
             req.location,
-            req.careers,
-            TITLE_CLUSTER_MAP,
-            max_per_career=req.max_results_per_career or 6
+            career_titles,
+            CAREER_CLUSTER_MAP,
+            max_per_career=6
         )
     except Exception as e:
-        raise HTTPException(500, f"Institutes search failed: {e}")
+        raise HTTPException(500, f"Institutions search failed: {e}")
 
-    if "institutes" in result and req.max_results_per_career:
-        result["institutes"] = result["institutes"][: req.max_results_per_career]
+    # --- build final output ---
+    final = {
+        "location_resolved": inst_results.get("location_resolved", req.location),
+        "predictions": [],
+        "institutes": inst_results.get("institutes", [])
+    }
 
-    if "institutes" not in result:
-        result = {"location_resolved": req.location, "institutes": []}
+    for p in top3:
+        final["predictions"].append({
+            "label": p["label"],
+            "probability": round(p["probability"], 4),
+            "cluster": get_cluster(p["label"])
+        })
 
-    return result
+    return final
