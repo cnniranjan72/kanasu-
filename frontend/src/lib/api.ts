@@ -4,57 +4,38 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
-/* ============================================
-   Interfaces matching FastAPI backend
-============================================ */
-
-export interface PredictRequest {
-  age: number;
-  gender: string;
-  education: string;
-  stream_code: string;
-  interests: string[];
-  skills: string[];
+export interface RoadmapResponse {
+  career: string;
+  roadmap: string[];
 }
 
-export interface BackendPredictionItem {
-  label: string;
-  probability: number;
-  cluster: string | null;
+export interface RoadmapRequest {
+  career: string;
+  education?: string;
+  interests?: string[];
+  skills?: string[];
 }
 
-/* ============================================
-   Frontend-friendly UI type
-============================================ */
-export interface CareerRecommendation {
-  title_code: string;
-  title_label: string;
-  cluster_label: string;
-  cluster_code: string;
-  probability: number;
-}
-
-/* ============================================
-   API Responses
-============================================ */
-export interface PredictResponse {
-  top_3: BackendPredictionItem[];
-}
-
-/* ============================================
-   API CALLS
-============================================ */
-
-export const predictCareers = async (
-  data: PredictRequest
-): Promise<PredictResponse> => {
-  const response = await api.post<PredictResponse>("/predict", data);
-  return response.data;
+export const generateRoadmap = async (
+  payload: RoadmapRequest
+): Promise<RoadmapResponse> => {
+  const res = await api.post<RoadmapResponse>("/roadmap", payload);
+  return res.data;
 };
+/* ============================================
+   UI Career Recommendation Type (Frontend Only)
+============================================ */
+
+export interface CareerRecommendation {
+  title_code: string;     // e.g. "software_engineer"
+  title_label: string;    // Human readable label
+  cluster_label: string;  // e.g. "AI & Data"
+  cluster_code: string;   // e.g. "tech"
+  probability: number;    // 0–1
+}
+
 
 export default api;

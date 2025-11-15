@@ -1,139 +1,107 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { generateRoadmap } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { BigCard } from "@/components/BigCard";
+const RoadmapPage: React.FC = () => {
+  const loc = useLocation();
 
-import { ArrowLeft, MapPin } from "lucide-react";
+  const [career, setCareer] = useState<any>(null);
 
-import type { CareerRecommendation } from "@/lib/api";
+  const [education, setEducation] = useState("");
+  const [interestsText, setInterestsText] = useState("");
+  const [skillsText, setSkillsText] = useState("");
 
-interface InstitutionMock {
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-}
-
-const Roadmap: React.FC = () => {
-  const navigate = useNavigate();
-
-  const [career, setCareer] = useState<CareerRecommendation | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const mockRoadmap = {
-    roadmap_text: "This is a complete mock career roadmap generated for demo purposes.",
-    steps: [
-      {
-        term: "Short Term",
-        tasks: ["Learn basics", "Build small projects"],
-        courses: ["Course A", "Course B"],
-        colleges: ["College 1", "College 2"],
-      },
-      {
-        term: "Medium Term",
-        tasks: ["Work on real-world projects", "Get internships"],
-        courses: ["Course C"],
-        colleges: ["College 3"],
-      },
-      {
-        term: "Long Term",
-        tasks: ["Join full-time", "Specialize in skills"],
-        courses: [],
-        colleges: [],
-      },
-    ],
-    nearby_institutions: [
-      { name: "ABC Institute", address: "MG Road", lat: 12.97, lng: 77.59 },
-      { name: "Tech Academy", address: "BTM Layout", lat: 12.91, lng: 77.60 },
-    ] as InstitutionMock[],
-  };
+  const [loading, setLoading] = useState(false);
+  const [roadmap, setRoadmap] = useState<string[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("selectedCareer");
-    if (!saved) {
-      navigate("/career-recommender");
-      return;
+    const s = (loc.state as any)?.career;
+    if (s) {
+      setCareer(s);
+      localStorage.setItem("selectedCareer", JSON.stringify(s));
+    } else {
+      const saved = localStorage.getItem("selectedCareer");
+      if (saved) setCareer(JSON.parse(saved));
     }
-    setCareer(JSON.parse(saved));
-    setLoading(false);
-  }, [navigate]);
+  }, [loc.state]);
 
-  if (loading || !career) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        Loading...
-      </div>
-    );
-  }
+  const handleGenerate = async () => {
+    if (!career) return alert("No career selected.");
+
+    setLoading(true);
+    try {
+      const payload = {
+        career: career.title_code || career,
+        education: education || undefined,
+        interests: interestsText
+          ? interestsText.split(",").map((x) => x.trim())
+          : undefined,
+        skills: skillsText
+          ? skillsText.split(",").map((x) => x.trim())
+          : undefined,
+      };
+
+      const res = await generateRoadmap(payload);
+      setRoadmap(res.roadmap);
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || "Failed to generate roadmap.");
+    }
+    setLoading(false);
+  };
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
+    <div className="container mx-auto px-4 py-6 max-w-3xl space-y-6">
+      
+      <h1 className="text-3xl font-bold">
+        Roadmap for{" "}
+        <span className="text-primary">{career?.title_label ?? career}</span>
+      </h1>
 
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/career-recommender")}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+      <div className="p-4 rounded-xl bg-white shadow space-y-3">
+        <input
+          className="border p-2 w-full rounded"
+          placeholder="Education (optional)"
+          value={education}
+          onChange={(e) => setEducation(e.target.value)}
+        />
+        <input
+          className="border p-2 w-full rounded"
+          placeholder="Interests (comma-separated)"
+          value={interestsText}
+          onChange={(e) => setInterestsText(e.target.value)}
+        />
+        <input
+          className="border p-2 w-full rounded"
+          placeholder="Skills (comma-separated)"
+          value={skillsText}
+          onChange={(e) => setSkillsText(e.target.value)}
+        />
 
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold">{career.title_label}</h2>
-          <p className="text-sm text-muted-foreground">{career.cluster_label}</p>
-        </div>
+        <button
+          onClick={handleGenerate}
+          disabled={loading}
+          className="bg-primary text-white px-4 py-2 rounded flex items-center gap-2"
+        >
+          {loading && <Loader2 className="h-5 w-5 animate-spin" />}
+          {loading ? "Generating..." : "Generate Roadmap"}
+        </button>
       </div>
 
-      {/* Summary */}
-      <BigCard>
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-          {mockRoadmap.roadmap_text}
-        </p>
-      </BigCard>
-
-      {/* Steps */}
-      {mockRoadmap.steps.map((step, i) => (
-        <BigCard key={i}>
-          <h3 className="text-lg font-bold mb-2">{step.term}</h3>
-
-          <ul className="list-disc ml-6 text-sm text-muted-foreground space-y-1">
-            {step.tasks.map((task, idx) => (
-              <li key={idx}>{task}</li>
+      {roadmap.length > 0 && (
+        <div className="p-4 rounded-xl bg-white shadow">
+          <h2 className="text-xl font-semibold mb-3">Career Roadmap</h2>
+          <ul className="list-disc pl-5 space-y-2 text-gray-700">
+            {roadmap.map((step, idx) => (
+              <li key={idx} className="leading-relaxed">
+                {step}
+              </li>
             ))}
           </ul>
-        </BigCard>
-      ))}
-
-      {/* Institutions */}
-      <div>
-        <h3 className="text-xl font-bold mb-3">Nearby Institutions</h3>
-
-        <div className="grid gap-4">
-          {mockRoadmap.nearby_institutions.map((inst, i) => (
-            <BigCard key={i}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-semibold">{inst.name}</h4>
-                  <p className="text-sm text-muted-foreground">{inst.address}</p>
-                </div>
-
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    window.open(
-                      `https://www.google.com/maps?q=${inst.lat},${inst.lng}`,
-                      "_blank"
-                    )
-                  }
-                >
-                  <MapPin className="h-4 w-4 mr-2" /> Map
-                </Button>
-              </div>
-            </BigCard>
-          ))}
         </div>
-      </div>
-
+      )}
     </div>
   );
 };
 
-export default Roadmap;
+export default RoadmapPage;

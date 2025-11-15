@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -42,28 +42,30 @@ const App = () => (
               <Route path="/signup" element={<SignUp />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
 
-              {/* MAIN APP LAYOUT */}
+              {/* MAIN LAYOUT */}
               <Route element={<MainLayout />}>
 
                 <Route path="/home" element={<LandingPage />} />
 
-                {/* Wrap ONLY career recommender with the provider */}
+                {/* 
+                  SHARED PROVIDER (FIX)
+                  Both pages use CareerFormContext
+                */}
                 <Route
-                  path="/career-recommender"
                   element={
                     <CareerFormProvider>
-                      <CareerRecommender />
+                      <Outlet />
                     </CareerFormProvider>
                   }
-                />
+                >
+                  <Route path="/career-recommender" element={<CareerRecommender />} />
+                  <Route path="/roadmap" element={<Roadmap />} />
+                </Route>
 
-                <Route path="/roadmap" element={<Roadmap />} />
                 <Route path="/scholarships" element={<Scholarships />} />
                 <Route path="/profile" element={<Profile />} />
-
               </Route>
 
-              {/* NOT FOUND */}
               <Route path="*" element={<NotFound />} />
 
             </Routes>
