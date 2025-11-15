@@ -6,36 +6,38 @@ import { BigCard } from "@/components/BigCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 
-const ProfileSettings: React.FC = () => {
-  const { locale, setLocale } = useLanguage();
+const Settings: React.FC = () => {
+  const { locale, setLocale, t } = useLanguage();
   const { toast } = useToast();
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-3xl space-y-6">
-      <h2 className="text-2xl font-bold text-center">Settings</h2>
+      <h2 className="text-2xl font-bold text-center">{t("settingsTitle")}</h2>
 
       <BigCard>
         <div className="space-y-6">
+          {/* Language */}
+          <div className="flex justify-between">
+            <Label>{t("preferredLanguage")}</Label>
 
-          <div className="flex items-center justify-between">
-            <Label>Preferred Language</Label>
             <div className="flex gap-2">
               <Button
                 size="sm"
                 variant={locale === "en" ? "default" : "outline"}
                 onClick={() => {
                   setLocale("en");
-                  toast({ title: "Language updated" });
+                  toast({ title: t("languageUpdated") });
                 }}
               >
                 English
               </Button>
+
               <Button
                 size="sm"
                 variant={locale === "kn" ? "default" : "outline"}
                 onClick={() => {
                   setLocale("kn");
-                  toast({ title: "ಭಾಷೆ ನವೀಕರಿಸಲಾಗಿದೆ" });
+                  toast({ title: t("languageUpdated") });
                 }}
               >
                 ಕನ್ನಡ
@@ -43,15 +45,15 @@ const ProfileSettings: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label>Voice Guidance</Label>
+          {/* Voice */}
+          <div className="flex justify-between">
+            <Label>{t("voiceGuidance")}</Label>
             <Switch defaultChecked />
           </div>
-
         </div>
       </BigCard>
     </div>
   );
 };
 
-export default ProfileSettings;
+export default Settings;

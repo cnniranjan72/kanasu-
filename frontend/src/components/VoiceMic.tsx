@@ -15,16 +15,11 @@ export const VoiceMic: React.FC<VoiceMicProps> = ({ onTranscript, className }) =
   const { t } = useLanguage();
 
   const handleClick = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening(onTranscript);
-    }
+    if (isListening) stopListening();
+    else startListening(onTranscript);
   };
 
-  if (!isSupported) {
-    return null;
-  }
+  if (!isSupported) return null;
 
   return (
     <Button
@@ -32,16 +27,16 @@ export const VoiceMic: React.FC<VoiceMicProps> = ({ onTranscript, className }) =
       size="icon"
       variant={isListening ? "destructive" : "secondary"}
       className={cn(
-        "touch-target rounded-full transition-all",
+        "rounded-full shadow-xl h-14 w-14 flex items-center justify-center",
         isListening && "animate-pulse scale-110",
         className
       )}
       aria-label={isListening ? t('listening') : t('tapToSpeak')}
     >
       {isListening ? (
-        <MicOff className="h-5 w-5" />
+        <MicOff className="h-6 w-6" />
       ) : (
-        <Mic className="h-5 w-5" />
+        <Mic className="h-6 w-6" />
       )}
     </Button>
   );

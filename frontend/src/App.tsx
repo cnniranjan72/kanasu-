@@ -19,6 +19,7 @@ import CareerRecommender from "./pages/CareerRecommender";
 import Roadmap from "./pages/Roadmap";
 import Scholarships from "./pages/Scholarships";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,7 +35,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
 
-              {/* DEFAULT ROUTE */}
+              {/* DEFAULT REDIRECT */}
               <Route path="/" element={<Navigate to="/login" replace />} />
 
               {/* AUTH ROUTES */}
@@ -42,12 +43,12 @@ const App = () => (
               <Route path="/signup" element={<SignUp />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
 
-              {/* MAIN APP LAYOUT */}
+              {/* MAIN LAYOUT ROUTES */}
               <Route element={<MainLayout />}>
 
                 <Route path="/home" element={<LandingPage />} />
 
-                {/* Wrap ONLY career recommender with the provider */}
+                {/* CAREER RECOMMENDER WITH CONTEXT */}
                 <Route
                   path="/career-recommender"
                   element={
@@ -59,7 +60,12 @@ const App = () => (
 
                 <Route path="/roadmap" element={<Roadmap />} />
                 <Route path="/scholarships" element={<Scholarships />} />
+
+                {/* PROFILE */}
                 <Route path="/profile" element={<Profile />} />
+
+                {/* ⭐ SETTINGS PAGE */}
+                <Route path="/settings" element={<Settings />} />
 
               </Route>
 
