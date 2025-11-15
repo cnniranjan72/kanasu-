@@ -5,8 +5,6 @@ router = APIRouter(prefix="/roadmap", tags=["roadmap"])
 
 @router.post("")
 def roadmap(request: Dict[str, Any]):
-    # temporary stub returning hard-coded structure
-    # Replace with actual Gemini call in Phase 4
     return {
         "career": request.get("career", "Unknown"),
         "summary": "This is a stubbed roadmap. Replace with Gemini output.",

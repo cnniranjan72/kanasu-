@@ -1,12 +1,21 @@
-fastapi
-uvicorn
-pydantic
-scikit-learn
-numpy
-pandas
-joblib
-huggingface_hub
-google-cloud-translate==3.12.0  # optional if you use Google Translate API
-google-generativeai             # optional (Gemini)
-python-dotenv
-imbalanced-learn
+# --- Core Backend ---
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+pydantic==2.8.2
+python-dotenv==1.0.1
+requests==2.32.3
+
+# --- ML Pipeline ---
+scikit-learn==1.5.2
+imbalanced-learn==0.12.0
+numpy==2.2.0
+pandas==2.2.2
+joblib==1.4.2
+
+# --- Gemini / LLM ---
+google-generativeai==0.8.5
+huggingface_hub==0.26.2
+
+# --- Firebase Authentication ---
+firebase-admin==6.5.0
+PyJWT==2.8.0
