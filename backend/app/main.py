@@ -4,6 +4,9 @@ from app.routers import health, predict, roadmap, institutions, chat
 from app.services.ml import ml_service
 from app.utils.logging_setup import setup_logging
 from app.services.firebase_client import init_firebase
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 setup_logging()
 app = FastAPI(title="Kanasu API", version="0.1.0")
@@ -13,7 +16,13 @@ app.include_router(health.router)
 app.include_router(predict.router)
 app.include_router(roadmap.router)
 app.include_router(institutions.router)
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],              # during dev OK; lock down in prod
+    allow_credentials=True,
+    allow_methods=["GET","POST","PUT","DELETE","OPTIONS"],
+    allow_headers=["*"],
+)
 # Optional chat router
 try:
     from app.routers import chat

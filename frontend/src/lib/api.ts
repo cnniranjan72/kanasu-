@@ -1,90 +1,60 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.yourdomain.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
+/* ============================================
+   Interfaces matching FastAPI backend
+============================================ */
+
 export interface PredictRequest {
   age: number;
+  gender: string;
   education: string;
   stream_code: string;
   interests: string[];
   skills: string[];
-  gender?: string;
-  location: {
-    lat: number;
-    lng: number;
-  };
 }
 
+export interface BackendPredictionItem {
+  label: string;
+  probability: number;
+  cluster: string | null;
+}
+
+/* ============================================
+   Frontend-friendly UI type
+============================================ */
 export interface CareerRecommendation {
   title_code: string;
   title_label: string;
-  cluster_code: string;
   cluster_label: string;
+  cluster_code: string;
   probability: number;
 }
 
+/* ============================================
+   API Responses
+============================================ */
 export interface PredictResponse {
-  recommendations: CareerRecommendation[];
+  top_3: BackendPredictionItem[];
 }
 
-export interface RoadmapRequest {
-  titles: string[];
-  user_profile: PredictRequest;
-  locale: string;
-}
+/* ============================================
+   API CALLS
+============================================ */
 
-export interface Institution {
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-}
-
-export interface RoadmapResponse {
-  roadmap_text: string;
-  steps: Array<{
-    term: string;
-    tasks: string[];
-    courses: string[];
-    colleges: string[];
-  }>;
-  nearby_institutions: Institution[];
-  metadata: Record<string, unknown>;
-}
-
-export const predictCareers = async (data: PredictRequest): Promise<PredictResponse> => {
-  const response = await api.post<PredictResponse>('/api/predict', data);
+export const predictCareers = async (
+  data: PredictRequest
+): Promise<PredictResponse> => {
+  const response = await api.post<PredictResponse>("/predict", data);
   return response.data;
-};
-
-export const generateRoadmap = async (data: RoadmapRequest): Promise<RoadmapResponse> => {
-  const response = await api.post<RoadmapResponse>('/api/gemini/roadmap', data);
-  return response.data;
-};
-
-export const normalizeTokens = (text: string): string => {
-  // Normalize synonyms and common variations
-  const normalizations: Record<string, string> = {
-    'coding': 'programming',
-    'computers': 'computer science',
-    'maths': 'mathematics',
-    'drawing': 'art',
-    'science': 'sciences',
-  };
-
-  let normalized = text.toLowerCase();
-  Object.entries(normalizations).forEach(([key, value]) => {
-    normalized = normalized.replace(new RegExp(key, 'gi'), value);
-  });
-
-  return normalized;
 };
 
 export default api;

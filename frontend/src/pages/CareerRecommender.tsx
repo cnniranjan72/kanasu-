@@ -15,42 +15,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCareerForm } from "@/contexts/CareerFormContext";
 
-import {
-  Loader2,
-  Sparkles,
-  GraduationCap,
-  School,
-  BookOpen,
-  University,
-  Library,
-  MoreHorizontal,
-} from "lucide-react";
+import { Loader2, Sparkles, GraduationCap, School, BookOpen, University, Library, MoreHorizontal } from "lucide-react";
 
-import type { CareerRecommendation } from "@/lib/api";
-
-const MOCK_RECOMMENDATIONS: CareerRecommendation[] = [
-  {
-    title_code: "software_engineer",
-    title_label: "Software Engineer",
-    cluster_label: "Technology",
-    cluster_code: "tech",
-    probability: 0.92,
-  },
-  {
-    title_code: "data_scientist",
-    title_label: "Data Scientist",
-    cluster_label: "AI & Data",
-    cluster_code: "data",
-    probability: 0.88,
-  },
-  {
-    title_code: "ux_designer",
-    title_label: "UX Designer",
-    cluster_label: "Creative",
-    cluster_code: "creative",
-    probability: 0.74,
-  },
-];
+import { predictCareers, BackendPredictionItem, CareerRecommendation } from "@/lib/api";
 
 const CareerRecommender: React.FC = () => {
   const navigate = useNavigate();
@@ -72,26 +39,52 @@ const CareerRecommender: React.FC = () => {
     { value: "other", label: "Other", icon: MoreHorizontal },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // load mock data
-    setTimeout(() => {
-      setRecommendations(MOCK_RECOMMENDATIONS);
+    try {
+      const payload = {
+        age: Number(formData.age),
+        gender: formData.gender,
+        education: formData.education,
+        stream_code: formData.stream_code,
+        interests: formData.interests,
+        skills: formData.skills.length > 0 ? formData.skills.split(",").map((s) => s.trim()) : [],
+      };
+
+      const res = await predictCareers(payload);
+
+      // Convert backend → UI format
+      const uiRecommendations: CareerRecommendation[] = res.top_3.map(
+        (item: BackendPredictionItem) => ({
+          title_code: item.label,
+          title_label: item.label,
+          cluster_label: item.cluster ?? "General",
+          cluster_code: item.cluster?.toLowerCase().replace(/\s+/g, "_") ?? "general",
+          probability: item.probability,
+        })
+      );
+
+      setRecommendations(uiRecommendations);
 
       toast({
         title: "Success",
-        description: "Mock recommendations loaded!",
+        description: "Career recommendations loaded!",
       });
 
-      // Auto-scroll to results
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 300);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.response?.data?.detail || "Failed to fetch recommendations",
+        variant: "destructive",
+      });
+    }
 
-      setLoading(false);
-    }, 600);
+    setLoading(false);
   };
 
   const handleViewRoadmap = (career: CareerRecommendation) => {
@@ -104,9 +97,7 @@ const CareerRecommender: React.FC = () => {
 
       <div className="text-center space-y-1">
         <h2 className="text-2xl font-bold">Career Recommender</h2>
-        <p className="text-muted-foreground">
-          Fill your details to get mock careers
-        </p>
+        <p className="text-muted-foreground">Fill your details to get smart recommendations</p>
       </div>
 
       <BigCard>
@@ -114,7 +105,6 @@ const CareerRecommender: React.FC = () => {
 
           {/* Age + Gender */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
             <div className="space-y-2">
               <Label>Age</Label>
               <Input
@@ -127,13 +117,8 @@ const CareerRecommender: React.FC = () => {
 
             <div className="space-y-2">
               <Label>Gender</Label>
-              <Select
-                value={formData.gender}
-                onValueChange={(v) => updateFormData("gender", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
+              <Select value={formData.gender} onValueChange={(v) => updateFormData("gender", v)}>
+                <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="male">Male</SelectItem>
                   <SelectItem value="female">Female</SelectItem>
@@ -141,7 +126,6 @@ const CareerRecommender: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-
           </div>
 
           {/* Education + Stream */}
@@ -149,13 +133,8 @@ const CareerRecommender: React.FC = () => {
 
             <div className="space-y-2">
               <Label>Education</Label>
-              <Select
-                value={formData.education}
-                onValueChange={(v) => updateFormData("education", v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select education" />
-                </SelectTrigger>
+              <Select value={formData.education} onValueChange={(v) => updateFormData("education", v)}>
+                <SelectTrigger><SelectValue placeholder="Select education" /></SelectTrigger>
                 <SelectContent>
                   {educationLevels.map((level) => {
                     const Icon = level.icon;
@@ -201,15 +180,12 @@ const CareerRecommender: React.FC = () => {
             />
           </div>
 
+          {/* Submit */}
           <Button className="w-full" size="lg" disabled={loading}>
-            {loading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <>
-                <Sparkles className="h-5 w-5 mr-2" />
-                Get Recommendations
-              </>
-            )}
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>
+              <Sparkles className="h-5 w-5 mr-2" />
+              Get Recommendations
+            </>}
           </Button>
 
         </form>
@@ -219,10 +195,7 @@ const CareerRecommender: React.FC = () => {
       <div ref={resultsRef}>
         {recommendations.length > 0 && (
           <div className="space-y-4 mt-4">
-
-            <h3 className="text-xl font-bold text-center">
-              Top Career Matches
-            </h3>
+            <h3 className="text-xl font-bold text-center">Top Career Matches</h3>
 
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory">
               {recommendations.map((career, index) => (
