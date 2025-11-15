@@ -1,22 +1,36 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import List, Optional
 
+# ------------------------------------
+# BASIC HEALTH RESPONSE
+# ------------------------------------
 class HealthResponse(BaseModel):
     status: str
 
+
+# ------------------------------------
+# MAIN PREDICTION OUTPUT MODELS
+# ------------------------------------
+
 class PredictionItem(BaseModel):
-    label: str
+    label: str                 # career name
     label_kn: Optional[str] = None
     probability: float
-    cluster: Optional[str] = None
+    cluster: Optional[str] = None  # cluster_label string
+
 
 class PredictResponse(BaseModel):
     top_3: List[PredictionItem]
 
+
+# ------------------------------------
+# INPUT MODEL
+# ------------------------------------
+
 class PredictInput(BaseModel):
-    text: Optional[str] = Field(default=None, description="Raw combined description")
-    interests: Optional[List[str]] = Field(default=None, description="List of interests")
-    skills: Optional[List[str]] = Field(default=None, description="List of skills")
+    text: Optional[str] = None
+    interests: Optional[List[str]] = None
+    skills: Optional[List[str]] = None
     education: Optional[str] = None
     stream_code: Optional[str] = None
     gender: Optional[str] = None
@@ -26,6 +40,9 @@ class PredictInput(BaseModel):
 
     @model_validator(mode="after")
     def validate_inputs(self):
-        if not self.text and not self.interests:
-            raise ValueError("Either 'text' or 'interests' must be provided.")
+        # EXACT NOTEBOOK RULE:
+        if not self.text and not self.interests and not self.skills:
+            raise ValueError(
+                "Provide at least one of: text, interests, skills"
+            )
         return self
