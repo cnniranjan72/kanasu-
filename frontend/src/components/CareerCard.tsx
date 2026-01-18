@@ -24,9 +24,9 @@ export const CareerCard: React.FC<CareerCardProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h3 className="text-xl font-bold text-foreground mb-1">
-              {career.title_label}
+              {career.label}
             </h3>
-            <p className="text-sm text-muted-foreground">{career.cluster_label}</p>
+            <p className="text-sm text-muted-foreground">{career.cluster}</p>
           </div>
           <Button
             size="icon"

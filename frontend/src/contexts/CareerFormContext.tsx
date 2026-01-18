@@ -6,14 +6,15 @@ import React, {
   Dispatch,
   SetStateAction,
 } from "react";
+import type { CareerRecommendation } from "@/lib/api";
 
 export interface CareerFormData {
-  age: string;
+  age: string; // Kept as string for Input, will convert to number for API
   gender: string;
   education: string;
   stream_code: string;
   interests: string[];
-  skills: string;
+  skills: string[]; // ✅ Fixed: should be array for consistency
 }
 
 interface CareerFormContextType {
@@ -23,6 +24,10 @@ interface CareerFormContextType {
     key: K,
     value: CareerFormData[K]
   ) => void;
+  careerRecommendations: CareerRecommendation[];
+  setCareerRecommendations: Dispatch<SetStateAction<CareerRecommendation[]>>;
+  selectedCareer: CareerRecommendation | null;
+  setSelectedCareer: Dispatch<SetStateAction<CareerRecommendation | null>>;
 }
 
 const CareerFormContext = createContext<CareerFormContextType | undefined>(
@@ -36,8 +41,11 @@ export const CareerFormProvider = ({ children }: { children: ReactNode }) => {
     education: "",
     stream_code: "",
     interests: [],
-    skills: "",
+    skills: [], // Fixed: array to match interface
   });
+
+  const [careerRecommendations, setCareerRecommendations] = useState<CareerRecommendation[]>([]);
+  const [selectedCareer, setSelectedCareer] = useState<CareerRecommendation | null>(null);
 
   const updateFormData = <K extends keyof CareerFormData>(
     key: K,
@@ -52,6 +60,10 @@ export const CareerFormProvider = ({ children }: { children: ReactNode }) => {
         formData,
         setFormData,
         updateFormData,
+        careerRecommendations, // Renamed from predictionResult for clarity/correctness
+        setCareerRecommendations,
+        selectedCareer,
+        setSelectedCareer,
       }}
     >
       {children}

@@ -13,7 +13,7 @@ class ChatMessage(BaseModel):
     message: str
     language: str = "en"
 
-@router.post("")
+@router.post("/")
 def chat(data: ChatMessage):
     if not data.session_id:
         import uuid

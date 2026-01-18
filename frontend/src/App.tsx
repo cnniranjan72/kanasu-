@@ -14,6 +14,9 @@ import Login from "./pages/auth/Login";
 import SignUp from "./pages/auth/SignUp";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 
+import Institutions from "./pages/Institutions";
+import Chat from "./pages/Chat";
+
 import LandingPage from "./pages/LandingPage";
 import CareerRecommender from "./pages/CareerRecommender";
 import Roadmap from "./pages/Roadmap";
@@ -62,6 +65,8 @@ const App = () => (
                   <Route path="/roadmap" element={<Roadmap />} />
                 </Route>
 
+                <Route path="/institutions" element={<Institutions />} />
+                <Route path="/chat" element={<Chat />} />
                 <Route path="/scholarships" element={<Scholarships />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>

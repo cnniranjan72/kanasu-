@@ -26,42 +26,17 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 
-import type { CareerRecommendation } from "@/lib/api";
-
-const MOCK_RECOMMENDATIONS: CareerRecommendation[] = [
-  {
-    title_code: "software_engineer",
-    title_label: "Software Engineer",
-    cluster_label: "Technology",
-    cluster_code: "tech",
-    probability: 0.92,
-  },
-  {
-    title_code: "data_scientist",
-    title_label: "Data Scientist",
-    cluster_label: "AI & Data",
-    cluster_code: "data",
-    probability: 0.88,
-  },
-  {
-    title_code: "ux_designer",
-    title_label: "UX Designer",
-    cluster_label: "Creative",
-    cluster_code: "creative",
-    probability: 0.74,
-  },
-];
+import { predictCareer, CareerRecommendation } from "@/lib/api";
 
 const CareerRecommender: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { formData, updateFormData } = useCareerForm();
+  const { formData, updateFormData, careerRecommendations: recommendations, setCareerRecommendations: setRecommendations, setSelectedCareer } = useCareerForm();
   const { t } = useLanguage();
 
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState(false);
-  const [recommendations, setRecommendations] = useState<CareerRecommendation[]>([]);
 
   const educationLevels = [
     { value: "sslc", label: "SSLC (10th)", icon: School },
@@ -72,17 +47,27 @@ const CareerRecommender: React.FC = () => {
     { value: "other", label: "Other", icon: MoreHorizontal },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // load mock data
-    setTimeout(() => {
-      setRecommendations(MOCK_RECOMMENDATIONS);
+    try {
+      const payload = {
+        age: parseInt(formData.age) || 0,
+        gender: formData.gender,
+        education: formData.education,
+        stream_code: formData.stream_code,
+        interests: formData.interests,
+        skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : [],
+      };
+
+      const res = await predictCareer(payload);
+      const recs = res.top_3 || []; // Safety check
+      setRecommendations(recs);
 
       toast({
         title: "Success",
-        description: "Mock recommendations loaded!",
+        description: "Career recommendations loaded!",
       });
 
       // Auto-scroll to results
@@ -90,12 +75,21 @@ const CareerRecommender: React.FC = () => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 300);
 
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: err?.response?.data?.detail || "Failed to get recommendations",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-    }, 600);
+    }
   };
 
   const handleViewRoadmap = (career: CareerRecommendation) => {
-    localStorage.setItem("selectedCareer", JSON.stringify(career));
+    // strict context usage
+    setSelectedCareer(career);
     navigate("/roadmap");
   };
 
@@ -105,7 +99,7 @@ const CareerRecommender: React.FC = () => {
       <div className="text-center space-y-1">
         <h2 className="text-2xl font-bold">Career Recommender</h2>
         <p className="text-muted-foreground">
-          Fill your details to get mock careers
+          Fill your details to get AI-powered career matches
         </p>
       </div>
 
@@ -194,10 +188,9 @@ const CareerRecommender: React.FC = () => {
           {/* Skills */}
           <div className="space-y-2">
             <Label>Skills</Label>
-            <Input
-              placeholder="coding, leadership..."
-              value={formData.skills}
-              onChange={(e) => updateFormData("skills", e.target.value)}
+            <InterestSelector
+              selected={formData.skills ? formData.skills.split(",").map(s => s.trim()).filter(Boolean) : []}
+              onChange={(v) => updateFormData("skills", v.join(", "))}
             />
           </div>
 
@@ -228,12 +221,12 @@ const CareerRecommender: React.FC = () => {
               {recommendations.map((career, index) => (
                 <CareerCard
                   key={index}
-                  career={career}
+                  career={career as any} // Cast if UI CareerCard expects slightly diff, but kept consistent
                   onViewRoadmap={() => handleViewRoadmap(career)}
                   onShowInfo={() =>
                     toast({
-                      title: career.title_label,
-                      description: career.cluster_label,
+                      title: career.label, // updated from title_label
+                      description: career.cluster, // updated from cluster_label
                     })
                   }
                 />

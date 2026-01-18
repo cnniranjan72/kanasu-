@@ -1,100 +1,109 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import { generateRoadmap } from "@/lib/api";
 import { Loader2 } from "lucide-react";
+import { useCareerForm } from "@/contexts/CareerFormContext";
+import { useNavigate } from "react-router-dom";
 
 const RoadmapPage: React.FC = () => {
-  const loc = useLocation();
-
-  const [career, setCareer] = useState<any>(null);
-
-  const [education, setEducation] = useState("");
-  const [interestsText, setInterestsText] = useState("");
-  const [skillsText, setSkillsText] = useState("");
+  const { selectedCareer, formData } = useCareerForm();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [roadmap, setRoadmap] = useState<string[]>([]);
+  const [error, setError] = useState("");
+
+  const careerLabel = selectedCareer?.label || "Unknown Career";
+
+  // Route guard: Redirect to career-recommender if no career is selected
+  useEffect(() => {
+    if (!selectedCareer) {
+      navigate("/career-recommender");
+      return;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCareer]);
 
   useEffect(() => {
-    const s = (loc.state as any)?.career;
-    if (s) {
-      setCareer(s);
-      localStorage.setItem("selectedCareer", JSON.stringify(s));
-    } else {
-      const saved = localStorage.getItem("selectedCareer");
-      if (saved) setCareer(JSON.parse(saved));
+    if (selectedCareer) {
+      handleGenerate();
     }
-  }, [loc.state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCareer]);
 
   const handleGenerate = async () => {
-    if (!career) return alert("No career selected.");
+    if (!selectedCareer) return;
 
     setLoading(true);
+    setError("");
     try {
       const payload = {
-        career: career.title_code || career,
-        education: education || undefined,
-        interests: interestsText
-          ? interestsText.split(",").map((x) => x.trim())
-          : undefined,
-        skills: skillsText
-          ? skillsText.split(",").map((x) => x.trim())
-          : undefined,
+        career: selectedCareer.label, // Sending label as career identifier per existing contracts/mock
+        education: formData.education,
+        interests: formData.interests,
+        skills: formData.skills ? formData.skills.split(",").map(x => x.trim()).filter(Boolean) : [],
       };
 
       const res = await generateRoadmap(payload);
-      setRoadmap(res.roadmap);
+      // Safely coerce to string bullets - handle malformed Gemini output
+      const roadmapData: any = res.roadmap;
+      if (Array.isArray(roadmapData)) {
+        setRoadmap(roadmapData.map(item => String(item)));
+      } else if (typeof roadmapData === 'string') {
+        // If it's a single string, try to split by newlines or keep as single step
+        const lines = roadmapData.split('\n').filter((line: string) => line.trim());
+        setRoadmap(lines.length > 1 ? lines : [roadmapData]);
+      } else {
+        // Fallback for unexpected format
+        setRoadmap(['Roadmap generation completed. Please try again if details are missing.']);
+      }
     } catch (err: any) {
-      alert(err?.response?.data?.detail || "Failed to generate roadmap.");
+      console.error(err);
+      setError(err?.response?.data?.detail || "Failed to generate roadmap.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
+
+  if (!selectedCareer) {
+    return (
+      <div className="container mx-auto px-4 py-10 text-center">
+        <h2 className="text-xl font-bold mb-4">No Career Selected</h2>
+        <p className="text-muted-foreground">Please go back to Career Recommender and select a career.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-3xl space-y-6">
-      
+
       <h1 className="text-3xl font-bold">
-        Roadmap for{" "}
-        <span className="text-primary">{career?.title_label ?? career}</span>
+        Roadmap for <span className="text-primary">{careerLabel}</span>
       </h1>
 
-      <div className="p-4 rounded-xl bg-white shadow space-y-3">
-        <input
-          className="border p-2 w-full rounded"
-          placeholder="Education (optional)"
-          value={education}
-          onChange={(e) => setEducation(e.target.value)}
-        />
-        <input
-          className="border p-2 w-full rounded"
-          placeholder="Interests (comma-separated)"
-          value={interestsText}
-          onChange={(e) => setInterestsText(e.target.value)}
-        />
-        <input
-          className="border p-2 w-full rounded"
-          placeholder="Skills (comma-separated)"
-          value={skillsText}
-          onChange={(e) => setSkillsText(e.target.value)}
-        />
+      {loading && (
+        <div className="flex flex-col items-center justify-center p-12 space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-lg text-muted-foreground">Generating personalized roadmap using Gemini AI...</p>
+        </div>
+      )}
 
-        <button
-          onClick={handleGenerate}
-          disabled={loading}
-          className="bg-primary text-white px-4 py-2 rounded flex items-center gap-2"
-        >
-          {loading && <Loader2 className="h-5 w-5 animate-spin" />}
-          {loading ? "Generating..." : "Generate Roadmap"}
-        </button>
-      </div>
+      {error && (
+        <div className="p-4 rounded-lg bg-destructive/10 text-destructive font-medium">
+          {error}
+        </div>
+      )}
 
-      {roadmap.length > 0 && (
-        <div className="p-4 rounded-xl bg-white shadow">
-          <h2 className="text-xl font-semibold mb-3">Career Roadmap</h2>
-          <ul className="list-disc pl-5 space-y-2 text-gray-700">
+      {!loading && roadmap.length > 0 && (
+        <div className="p-6 rounded-xl bg-white shadow-sm border space-y-4">
+          <h2 className="text-2xl font-semibold border-b pb-2">Your Path</h2>
+
+          <ul className="space-y-4">
             {roadmap.map((step, idx) => (
-              <li key={idx} className="leading-relaxed">
-                {step}
+              <li key={idx} className="flex gap-3">
+                <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary/60 mt-2"></span>
+                <span className="text-gray-700 leading-relaxed">
+                  {step}
+                </span>
               </li>
             ))}
           </ul>

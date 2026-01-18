@@ -8,6 +8,10 @@ import {
   Building2,
   Languages,
   Mic,
+  Target,
+  Compass,
+  MessageCircle,
+  GraduationCap,
 } from "lucide-react";
 
 const features = [
@@ -77,14 +81,47 @@ const LandingPage: React.FC = () => {
 
 
 
-          {/* CTA Button */}
-          <Button
-            size="lg"
-            className="px-8 py-6 text-lg font-semibold shadow-xl bg-primary hover:bg-primary"
-            onClick={() => navigate("/career-recommender")}
-          >
-            Career Recommender
-          </Button>
+          {/* PRIMARY CTA BUTTONS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
+            <Button
+              size="lg"
+              className="px-6 py-4 text-base font-semibold shadow-xl bg-primary hover:bg-primary"
+              onClick={() => navigate("/career-recommender")}
+            >
+              <Target className="h-5 w-5 mr-2" />
+              🎯 Get Career Recommendation
+            </Button>
+            
+            <Button
+              size="lg"
+              variant="outline"
+              className="px-6 py-4 text-base font-semibold shadow-xl border-2 hover:bg-accent"
+              onClick={() => navigate("/roadmap")}
+            >
+              <Compass className="h-5 w-5 mr-2" />
+              🧭 View Career Roadmap
+            </Button>
+            
+            <Button
+              size="lg"
+              variant="outline"
+              className="px-6 py-4 text-base font-semibold shadow-xl border-2 hover:bg-accent"
+              onClick={() => navigate("/institutions")}
+            >
+              <GraduationCap className="h-5 w-5 mr-2" />
+              🏫 Find Nearby Institutes
+            </Button>
+            
+            <Button
+              size="lg"
+              variant="outline"
+              className="px-6 py-4 text-base font-semibold shadow-xl border-2 hover:bg-accent"
+              onClick={() => navigate("/chat")}
+            >
+              <MessageCircle className="h-5 w-5 mr-2" />
+              💬 Ask Career Chatbot
+            </Button>
+          </div>
         </div>
       </div>
 
